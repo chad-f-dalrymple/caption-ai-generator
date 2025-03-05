@@ -186,6 +186,7 @@ export async function analyzeImageWithAI(imagePath) {
     }
     
     // Format the results
+    console.log('results:', results)
     const altText = formatAltText(results.captionText);
     
     // Create caption based on available data

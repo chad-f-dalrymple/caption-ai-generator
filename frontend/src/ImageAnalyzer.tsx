@@ -121,7 +121,6 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
   
   return (
     <div className="image-analyzer">
-      <h2>Image Accessibility Analyzer</h2>
       
       {/* File input (hidden) */}
       <input
@@ -133,13 +132,20 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
       />
       
       {/* Upload button */}
-      <div className="upload-section">
+      <div className="upload-section flex flex-col items-center">
         <button 
-          className="upload-button"
+          className="upload-button bg-blue-700 mt-6 mb-6 w-2xs p-[8px]"
           onClick={triggerFileInput}
           disabled={isLoading}
         >
           Select Image
+        </button>
+        <button
+            className="analyze-button bg-blue-700 mb-6 w-2xs p-[8px]"
+            onClick={handleAnalyze}
+            disabled={isLoading || !file}
+          >
+            {isLoading ? 'Analyzing...' : 'Analyze Image'}
         </button>
         
         {file && (
@@ -153,17 +159,9 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
       {previewUrl && (
         <div className="preview-section">
           <h3>Preview</h3>
-          <div className="image-preview">
+          <div className="image-preview m-auto mt-8 mb-8">
             <img src={previewUrl} alt="Preview" />
           </div>
-          
-          <button
-            className="analyze-button"
-            onClick={handleAnalyze}
-            disabled={isLoading || !file}
-          >
-            {isLoading ? 'Analyzing...' : 'Analyze Image'}
-          </button>
         </div>
       )}
       
@@ -177,21 +175,21 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
       {/* Analysis results */}
       {analysis && (
         <div className="analysis-results">
-          <h3>Analysis Results</h3>
+          <h2 className='text-xl font-bold mb-4'>Analysis Results</h2>
           
-          <div className="result-item">
-            <h4>Alt Text</h4>
+          <div className="result-item mb-4">
+          <span className='text-lg font-bold'>Alt Text</span>
             <p>{analysis.altText}</p>
           </div>
           
-          <div className="result-item">
-            <h4>Caption</h4>
+          <div className="result-item mb-4">
+          <span className='text-lg font-bold'>Caption</span>
             <p>{analysis.caption}</p>
           </div>
           
-          <div className="html-code">
-            <h4>Generated HTML</h4>
-            <pre>{htmlCode}</pre>
+          <div className="html-code mb-4">
+            <span className='text-lg font-bold'>Generated HTML</span>
+            <pre><code>{htmlCode}</code></pre>
             
             <button
               className="copy-button"
