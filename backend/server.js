@@ -6,8 +6,16 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
+// Import the image analysis service
+import { processUploadedImage } from './imageAnalysisService.js';
+
 // Load environment variables
 dotenv.config();
+
+// Debug: Check if environment variables are loaded
+console.log('Environment variables loaded:');
+console.log('- PORT:', process.env.PORT);
+console.log('- HUGGINGFACE_API_TOKEN exists:', !!process.env.HUGGINGFACE_API_TOKEN);
 
 // Get current directory name (ES modules don't have __dirname)
 const __filename = fileURLToPath(import.meta.url);
@@ -71,19 +79,9 @@ const upload = multer({
   }
 });
 
-// Temporary function for image analysis (before creating the service file)
-async function analyzeImageWithAI(imagePath) {
-  // This is a placeholder that returns mock data
-  return {
-    altText: "A sample image showing an object or scene.",
-    caption: "This is a detailed caption describing the content of the image. It provides more context and information than the alt text."
-  };
-}
-
 // API endpoint for image analysis
 app.post('/api/analyze-image', (req, res, next) => {
   console.log('API endpoint hit: /api/analyze-image');
-  console.log('Request headers:', req.headers);
   next();
 }, upload.single('image'), async (req, res) => {
   try {
@@ -96,30 +94,16 @@ app.post('/api/analyze-image', (req, res, next) => {
 
     console.log('File uploaded successfully:', req.file.originalname);
     
-    // Get the path to the uploaded file
-    const imagePath = req.file.path;
-    console.log('Image path:', imagePath);
-
     try {
-      // Analyze the image with placeholder function
+      // Process the image using our service
       console.log('Analyzing image...');
-      const results = await analyzeImageWithAI(imagePath);
+      const results = await processUploadedImage(req);
       console.log('Analysis complete');
-      
-      // Delete the uploaded file after analysis (optional)
-      // fs.unlinkSync(imagePath);
       
       console.log('Sending response');
       res.json(results);
     } catch (error) {
       console.error('Error analyzing image:', error);
-      
-      // Clean up the file on error
-      if (fs.existsSync(imagePath)) {
-        console.log('Cleaning up file after error');
-        fs.unlinkSync(imagePath);
-      }
-      
       throw error;
     }
   } catch (error) {
