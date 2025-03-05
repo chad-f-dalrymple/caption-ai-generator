@@ -7,13 +7,20 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 /**
- * Analyzes an image using Hugging Face models
+ * Analyzes an image using Hugging Face models with robust fallback strategies
  * @param {string} imagePath - Path to the image file
  * @returns {Promise<Object>} - Object containing altText and caption
  */
 export async function analyzeImageWithAI(imagePath) {
   try {
     const huggingfaceToken = process.env.HUGGINGFACE_API_TOKEN;
+    
+    console.log('------------------------------------------------------------');
+    console.log('Starting image analysis');
+    console.log('HF Token exists:', !!huggingfaceToken);
+    console.log('Token first 4 chars:', huggingfaceToken ? huggingfaceToken.substring(0, 4) : 'none');
+    console.log('Image path:', imagePath);
+    console.log('------------------------------------------------------------');
     
     if (!huggingfaceToken) {
       console.warn('No Hugging Face API token found in .env file. Please add HUGGINGFACE_API_TOKEN to your .env file.');
@@ -23,105 +30,181 @@ export async function analyzeImageWithAI(imagePath) {
     // Read the image file
     const imageBuffer = fs.readFileSync(imagePath);
     
-    try {
-      // First, get a descriptive caption using a captioning model
-      console.log('Requesting caption from Hugging Face API...');
-      const captionResponse = await axios.post(
-        'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base',
-        imageBuffer,
-        {
-          headers: {
-            'Authorization': `Bearer ${huggingfaceToken}`,
-            'Content-Type': 'application/octet-stream'
-          },
-          responseType: 'json',
-          timeout: 30000 // 30 seconds timeout
+    // Define all available models grouped by functionality
+    const models = {
+      caption: [
+        'nlpconnect/vit-gpt2-image-captioning',
+        'Salesforce/blip-image-captioning-base',
+        'openai/clip-vit-base-patch32' // Different approach but can work
+      ],
+      analysis: [
+        'microsoft/git-base-coco',
+        'nlpconnect/vit-gpt2-image-captioning', // Can double as analysis in a pinch
+        'salesforce/blip-image-captioning-base' // Can also double as analysis
+      ],
+      classification: [
+        'microsoft/resnet-50',
+        'facebook/deit-base-distilled-patch16-224',
+        'google/vit-base-patch16-224'
+      ]
+    };
+    
+    // Results object that we'll build up
+    let results = {
+      captionSuccess: false,
+      analysisSuccess: false,
+      classificationSuccess: false,
+      captionText: '',
+      analysisText: '',
+      classifications: []
+    };
+    
+    // Try caption models
+    for (const model of models.caption) {
+      if (results.captionSuccess) break;
+      
+      try {
+        console.log(`Trying caption model: ${model}`);
+        const response = await axios.post(
+          `https://api-inference.huggingface.co/models/${model}`,
+          imageBuffer,
+          {
+            headers: {
+              'Authorization': `Bearer ${huggingfaceToken}`,
+              'Content-Type': 'application/octet-stream'
+            },
+            responseType: 'json',
+            timeout: 15000 // Shorter timeout to try more models
+          }
+        );
+        
+        // Different models have different response formats
+        if (response.data && Array.isArray(response.data) && response.data[0]?.generated_text) {
+          results.captionText = response.data[0].generated_text;
+          results.captionSuccess = true;
+          console.log(`Caption success with ${model}: ${results.captionText}`);
+        } else if (response.data && typeof response.data === 'object' && response.data.generated_text) {
+          results.captionText = response.data.generated_text;
+          results.captionSuccess = true;
+          console.log(`Caption success with ${model}: ${results.captionText}`);
+        } else if (response.data && typeof response.data === 'string') {
+          results.captionText = response.data;
+          results.captionSuccess = true;
+          console.log(`Caption success with ${model}: ${results.captionText}`);
+        } else {
+          console.log(`Unexpected response format from ${model}:`, response.data);
         }
-      );
-      
-      // Check the response structure
-      console.log('Caption API response structure:', JSON.stringify(captionResponse.data).slice(0, 200) + '...');
-      
-      // Basic caption from the model
-      const basicCaption = captionResponse.data[0]?.generated_text || 'Image without description';
-      console.log('Received basic caption:', basicCaption);
-      
-      // Then, get more detailed image analysis from a vision-language model
-      console.log('Requesting detailed analysis from Hugging Face API...');
-      const analysisResponse = await axios.post(
-        'https://api-inference.huggingface.co/models/microsoft/git-large-coco',
-        imageBuffer,
-        {
-          headers: {
-            'Authorization': `Bearer ${huggingfaceToken}`,
-            'Content-Type': 'application/octet-stream'
-          },
-          responseType: 'json',
-          timeout: 30000 // 30 seconds timeout
-        }
-      );
-      
-      // Get detailed analysis
-      const detailedAnalysis = analysisResponse.data[0]?.generated_text || '';
-      console.log('Received detailed analysis of length:', detailedAnalysis.length);
-      
-      // Optional: Get image classification for additional context
-      console.log('Requesting classification from Hugging Face API...');
-      const classificationResponse = await axios.post(
-        'https://api-inference.huggingface.co/models/google/vit-base-patch16-224',
-        imageBuffer,
-        {
-          headers: {
-            'Authorization': `Bearer ${huggingfaceToken}`,
-            'Content-Type': 'application/octet-stream'
-          },
-          responseType: 'json',
-          timeout: 30000 // 30 seconds timeout
-        }
-      );
-      
-      // Get top classifications/tags
-      const classifications = classificationResponse.data
-        .slice(0, 3)
-        .map(item => item.label)
-        .join(', ');
-      console.log('Received classifications:', classifications);
-      
-      // Create the alt text (keep it concise)
-      const altText = formatAltText(basicCaption);
-      
-      // Create a more detailed caption by combining information
-      const caption = formatCaption(detailedAnalysis, basicCaption, classifications);
-      
-      return {
-        altText,
-        caption
-      };
-    } catch (error) {
-      console.error('Error calling Hugging Face API:');
-      
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error('API Error Response:', {
-          status: error.response.status,
-          statusText: error.response.statusText,
-          data: error.response.data
-        });
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error('No response received from API. Network issue or API service down.');
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.error('Error message:', error.message);
+      } catch (error) {
+        console.log(`Caption model ${model} failed:`, error.message);
       }
-      
-      console.log('Falling back to mock data due to API error');
+    }
+    
+    // Try analysis models (if caption didn't work, we'll skip this to save time)
+    if (results.captionSuccess) {
+      for (const model of models.analysis) {
+        if (results.analysisSuccess) break;
+        
+        try {
+          console.log(`Trying analysis model: ${model}`);
+          const response = await axios.post(
+            `https://api-inference.huggingface.co/models/${model}`,
+            imageBuffer,
+            {
+              headers: {
+                'Authorization': `Bearer ${huggingfaceToken}`,
+                'Content-Type': 'application/octet-stream'
+              },
+              responseType: 'json',
+              timeout: 15000
+            }
+          );
+          
+          // Different models have different response formats
+          if (response.data && Array.isArray(response.data) && response.data[0]?.generated_text) {
+            results.analysisText = response.data[0].generated_text;
+            results.analysisSuccess = true;
+            console.log(`Analysis success with ${model}: ${results.analysisText.substring(0, 50)}...`);
+          } else if (response.data && typeof response.data === 'object' && response.data.generated_text) {
+            results.analysisText = response.data.generated_text;
+            results.analysisSuccess = true;
+            console.log(`Analysis success with ${model}: ${results.analysisText.substring(0, 50)}...`);
+          } else if (response.data && typeof response.data === 'string') {
+            results.analysisText = response.data;
+            results.analysisSuccess = true;
+            console.log(`Analysis success with ${model}: ${results.analysisText.substring(0, 50)}...`);
+          } else {
+            console.log(`Unexpected response format from ${model}:`, response.data);
+          }
+        } catch (error) {
+          console.log(`Analysis model ${model} failed:`, error.message);
+        }
+      }
+    }
+    
+    // Try classification models (if we got at least a caption, otherwise skip)
+    if (results.captionSuccess) {
+      for (const model of models.classification) {
+        if (results.classificationSuccess) break;
+        
+        try {
+          console.log(`Trying classification model: ${model}`);
+          const response = await axios.post(
+            `https://api-inference.huggingface.co/models/${model}`,
+            imageBuffer,
+            {
+              headers: {
+                'Authorization': `Bearer ${huggingfaceToken}`,
+                'Content-Type': 'application/octet-stream'
+              },
+              responseType: 'json',
+              timeout: 15000
+            }
+          );
+          
+          // Handle response
+          if (response.data && Array.isArray(response.data)) {
+            results.classifications = response.data
+              .slice(0, 3)
+              .map(item => item.label || item.generated_text || item)
+              .filter(label => typeof label === 'string');
+            
+            if (results.classifications.length > 0) {
+              results.classificationSuccess = true;
+              console.log(`Classification success with ${model}: ${results.classifications.join(', ')}`);
+            }
+          }
+        } catch (error) {
+          console.log(`Classification model ${model} failed:`, error.message);
+        }
+      }
+    }
+    
+    // Did we get any useful results?
+    if (!results.captionSuccess) {
+      console.log('All caption models failed. Using mock data.');
       return getMockAnalysisResults();
     }
+    
+    // Format the results
+    const altText = formatAltText(results.captionText);
+    
+    // Create caption based on available data
+    let caption;
+    if (results.analysisSuccess && results.analysisText) {
+      caption = formatCaption(results.analysisText, results.captionText, results.classifications.join(', '));
+    } else if (results.classificationSuccess) {
+      caption = `${results.captionText}. This image contains: ${results.classifications.join(', ')}.`;
+    } else {
+      caption = results.captionText;
+    }
+    
+    return {
+      altText,
+      caption
+    };
   } catch (error) {
     console.error('Error in analyzeImageWithAI:', error);
-    throw new Error('Failed to process image with AI service');
+    return getMockAnalysisResults();
   }
 }
 
