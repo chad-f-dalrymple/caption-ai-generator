@@ -1,0 +1,210 @@
+import React, { useState, useRef, ChangeEvent } from 'react';
+import { 
+  uploadImageForAnalysis, 
+  createImagePreview, 
+  generateHtmlCode, 
+  copyToClipboard 
+} from './utils/utils'; // Assuming the previous TypeScript utilities are in this file
+
+// Define component prop types
+interface ImageAnalyzerProps {
+  maxFileSize?: number; // Optional override for max file size in bytes
+  onAnalysisComplete?: (result: AnalysisResult) => void; // Optional callback
+}
+
+// Define component state types
+interface AnalysisResult {
+  altText: string;
+  caption: string;
+  [key: string]: any;
+}
+
+const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({ 
+  maxFileSize = 10 * 1024 * 1024, // Default 10MB
+  onAnalysisComplete 
+}) => {
+  // State management
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [htmlCode, setHtmlCode] = useState<string>('');
+  const [copied, setCopied] = useState<boolean>(false);
+  
+  // Refs
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Handle file selection
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setError('');
+    setCopied(false);
+    setAnalysis(null);
+    setHtmlCode('');
+    
+    const selectedFile = e.target.files && e.target.files[0];
+    
+    if (!selectedFile) {
+      return;
+    }
+    
+    // Validate file size
+    if (selectedFile.size > maxFileSize) {
+      setError(`Image is too large. Please select an image under ${maxFileSize / (1024 * 1024)}MB.`);
+      return;
+    }
+    
+    // Set the file and create preview
+    setFile(selectedFile);
+    createImagePreview(selectedFile, (dataUrl: string) => {
+      setPreviewUrl(dataUrl);
+    });
+  };
+  
+  // Trigger file input click
+  const triggerFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+  
+  // Handle analyze button click
+  const handleAnalyze = async () => {
+    if (!file) {
+      setError('Please select an image file first.');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      // Upload and analyze the image
+      const result = await uploadImageForAnalysis(file);
+      
+      // Update state with results
+      setAnalysis(result);
+      
+      // Generate HTML code
+      const html = generateHtmlCode(
+        file.name, 
+        result.altText, 
+        result.caption
+      );
+      setHtmlCode(html);
+      
+      // Call the optional callback if provided
+      if (onAnalysisComplete) {
+        onAnalysisComplete(result);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Handle copy HTML code
+  const handleCopyCode = async () => {
+    if (!htmlCode) return;
+    
+    const success = await copyToClipboard(htmlCode);
+    setCopied(success);
+    
+    // Reset copied status after 3 seconds
+    if (success) {
+      setTimeout(() => {
+        setCopied(false);
+      }, 3000);
+    }
+  };
+  
+  return (
+    <div className="image-analyzer">
+      <h2>Image Accessibility Analyzer</h2>
+      
+      {/* File input (hidden) */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*"
+        style={{ display: 'none' }}
+      />
+      
+      {/* Upload button */}
+      <div className="upload-section">
+        <button 
+          className="upload-button"
+          onClick={triggerFileInput}
+          disabled={isLoading}
+        >
+          Select Image
+        </button>
+        
+        {file && (
+          <div className="file-info">
+            <span>{file.name} ({(file.size / 1024).toFixed(1)} KB)</span>
+          </div>
+        )}
+      </div>
+      
+      {/* Preview section */}
+      {previewUrl && (
+        <div className="preview-section">
+          <h3>Preview</h3>
+          <div className="image-preview">
+            <img src={previewUrl} alt="Preview" />
+          </div>
+          
+          <button
+            className="analyze-button"
+            onClick={handleAnalyze}
+            disabled={isLoading || !file}
+          >
+            {isLoading ? 'Analyzing...' : 'Analyze Image'}
+          </button>
+        </div>
+      )}
+      
+      {/* Error message */}
+      {error && (
+        <div className="error-message">
+          <p>{error}</p>
+        </div>
+      )}
+      
+      {/* Analysis results */}
+      {analysis && (
+        <div className="analysis-results">
+          <h3>Analysis Results</h3>
+          
+          <div className="result-item">
+            <h4>Alt Text</h4>
+            <p>{analysis.altText}</p>
+          </div>
+          
+          <div className="result-item">
+            <h4>Caption</h4>
+            <p>{analysis.caption}</p>
+          </div>
+          
+          <div className="html-code">
+            <h4>Generated HTML</h4>
+            <pre>{htmlCode}</pre>
+            
+            <button
+              className="copy-button"
+              onClick={handleCopyCode}
+              disabled={!htmlCode}
+            >
+              {copied ? 'Copied!' : 'Copy HTML'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ImageAnalyzer;
