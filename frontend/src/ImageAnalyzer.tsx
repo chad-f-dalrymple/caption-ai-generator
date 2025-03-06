@@ -1,4 +1,5 @@
 import React, { useState, useRef, ChangeEvent } from 'react';
+import { FaCopy } from "react-icons/fa";
 import { 
   uploadImageForAnalysis, 
   createImagePreview, 
@@ -154,51 +155,56 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
           </div>
         )}
       </div>
-      
-      {/* Preview section */}
-      {previewUrl && (
-        <div className="preview-section">
-          <h3>Preview</h3>
-          <div className="image-preview m-auto mt-8 mb-8">
-            <img src={previewUrl} alt="Preview" />
+      <div className='flex flex-row justify-center'>
+        {/* Preview section */}
+        {previewUrl && (
+          <div className="preview-section mr-10">
+            <h2 className='text-xl font-bold mb-4'>Preview</h2>
+            <div className="image-preview m-auto mt-8 mb-8">
+              <img src={previewUrl} alt="Preview" />
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Analysis results */}
+        {analysis && (
+          <div className="analysis-results w-lg">
+            <h2 className='text-xl font-bold mb-4'>Analysis Results</h2>
+            
+            <div className="result-item mb-4">
+            <span className='text-lg font-bold'>Alt Text</span>
+              <p className='text-left'>{analysis.altText}</p>
+            </div>
+            
+            <div className="result-item mb-4">
+            <span className='text-lg font-bold'>Caption</span>
+              <p className='text-left'>{analysis.caption}</p>
+            </div>
+            
+            <div className="html-code mb-4">
+              <span className='text-lg font-bold'>Generated HTML</span>
+              <pre><code>{htmlCode}</code></pre>
+              
+              <button
+                className="copy-button"
+                onClick={handleCopyCode}
+                disabled={!htmlCode}
+              >
+                <span className='flex flex-row items-center'>
+                  <FaCopy style={{ verticalAlign: 'middle', marginRight: '6px' }} /> 
+                  <span>{copied ? 'Copied!' : 'Copy HTML'}</span>
+                </span>
+              </button>
+              
+            </div>
+          </div>
+        )}
+      </div>
       
       {/* Error message */}
       {error && (
         <div className="error-message">
           <p>{error}</p>
-        </div>
-      )}
-      
-      {/* Analysis results */}
-      {analysis && (
-        <div className="analysis-results">
-          <h2 className='text-xl font-bold mb-4'>Analysis Results</h2>
-          
-          <div className="result-item mb-4">
-          <span className='text-lg font-bold'>Alt Text</span>
-            <p>{analysis.altText}</p>
-          </div>
-          
-          <div className="result-item mb-4">
-          <span className='text-lg font-bold'>Caption</span>
-            <p>{analysis.caption}</p>
-          </div>
-          
-          <div className="html-code mb-4">
-            <span className='text-lg font-bold'>Generated HTML</span>
-            <pre><code>{htmlCode}</code></pre>
-            
-            <button
-              className="copy-button"
-              onClick={handleCopyCode}
-              disabled={!htmlCode}
-            >
-              {copied ? 'Copied!' : 'Copy HTML'}
-            </button>
-          </div>
         </div>
       )}
     </div>
