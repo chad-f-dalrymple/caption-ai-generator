@@ -33,6 +33,7 @@ export async function analyzeImageWithAI(imagePath) {
     // Define all available models grouped by functionality
     const models = {
       caption: [
+        'microsoft/git-base',
         'nlpconnect/vit-gpt2-image-captioning',
         'Salesforce/blip-image-captioning-base',
         'openai/clip-vit-base-patch32' // Different approach but can work
