@@ -119,7 +119,17 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
       }, 3000);
     }
   };
+
+  const fixSeparatedFirstLetters = (inputString: string) => {
+    const pattern = /\b([A-Z])\s+([a-z]+)\b/g;
+    // Replace pattern with the first letter followed directly by the rest of the word
+    return inputString.replace(pattern, (match, firstLetter, restOfWord) => {
+      return `${firstLetter}${restOfWord}`;
+    });
+  }
   
+  const capitalizeFirstLetter = (sentence: string) =>  sentence.charAt(0).toUpperCase() + sentence.slice(1);
+
   return (
     <div className="image-analyzer">
       
@@ -173,12 +183,12 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
             
             <div className="result-item mb-4">
             <span className='text-lg font-bold'>Alt Text</span>
-              <p className='text-left'>{analysis.altText}</p>
+              <p className='text-left'>{fixSeparatedFirstLetters(analysis.altText)}</p>
             </div>
             
             <div className="result-item mb-4">
             <span className='text-lg font-bold'>Caption</span>
-              <p className='text-left'>{analysis.caption}</p>
+              <p className='text-left'>{capitalizeFirstLetter(analysis.caption)}</p>
             </div>
             
             <div className="html-code mb-4">

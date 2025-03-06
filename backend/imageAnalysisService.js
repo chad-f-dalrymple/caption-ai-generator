@@ -1,6 +1,5 @@
 import fs from 'fs';
 import axios from 'axios';
-import FormData from 'form-data';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -23,25 +22,26 @@ export async function analyzeImageWithAI(imagePath) {
     console.log('------------------------------------------------------------');
     
     if (!huggingfaceToken) {
-      console.warn('No Hugging Face API token found in .env file. Please add HUGGINGFACE_API_TOKEN to your .env file.');
+      console.warn('No Hugging Face API token found.');
       return getMockAnalysisResults();
     }
     
     // Read the image file
     const imageBuffer = fs.readFileSync(imagePath);
     
-    // Define all available models grouped by functionality
+    // Define all available models grouped by functionality. there are multiple in case one or more fail
     const models = {
       caption: [
-        'microsoft/git-base',
+        'Salesforce/blip-image-captioning-large',
+        'microsoft/git-base-coco',
         'nlpconnect/vit-gpt2-image-captioning',
-        'Salesforce/blip-image-captioning-base',
-        'openai/clip-vit-base-patch32' // Different approach but can work
+        'Salesforce/blip-image-captioning-base'
       ],
       analysis: [
+        'Salesforce/blip-image-captioning-large',
+        'Salesforce/blip-image-captioning-base', // Can also double as analysis
         'microsoft/git-base-coco',
         'nlpconnect/vit-gpt2-image-captioning', // Can double as analysis in a pinch
-        'salesforce/blip-image-captioning-base' // Can also double as analysis
       ],
       classification: [
         'microsoft/resnet-50',
@@ -180,14 +180,12 @@ export async function analyzeImageWithAI(imagePath) {
       }
     }
     
-    // Did we get any useful results?
     if (!results.captionSuccess) {
       console.log('All caption models failed. Using mock data.');
       return getMockAnalysisResults();
     }
     
     // Format the results
-    console.log('results:', results)
     const altText = formatAltText(results.captionText);
     
     // Create caption based on available data
@@ -229,8 +227,7 @@ export async function processUploadedImage(req) {
     const results = await analyzeImageWithAI(imagePath);
     
     // Delete the uploaded file after analysis (optional)
-    // Uncomment this if you want to delete files after processing
-    // fs.unlinkSync(imagePath);
+    fs.unlinkSync(imagePath);
     
     return results;
   } catch (error) {
@@ -255,7 +252,7 @@ function formatAltText(text) {
   }
   
   // Ensure it starts with a capital letter
-  altText = altText.charAt(0).toUpperCase() + altText.slice(1);
+  altText = `${altText.charAt(0).toUpperCase()} ${altText.slice(1)}`;
   
   // Limit length to ~125 characters (standard for alt text)
   if (altText.length > 125) {
