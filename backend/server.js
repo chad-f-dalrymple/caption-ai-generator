@@ -5,9 +5,11 @@ import cors from 'cors';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 
 // Import the image analysis service
-import { processUploadedImage } from './imageAnalysisService.js';
+import { processUploadedImage, textToImageWithAI } from './imageAnalysisService.js';
 
 // Load environment variables
 dotenv.config();
@@ -23,7 +25,38 @@ const __dirname = path.dirname(__filename);
 
 // Initialize Express app
 const app = express();
+const httpServer = createServer(app);
 const port = process.env.PORT || 3000;
+const io = new Server(httpServer, {
+  transports: ['polling'],
+  cors: {
+    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    credentials: true
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log('Client connected');
+  
+  // For practice: check API status every 5 seconds
+  const interval = setInterval(async () => {
+    try {
+      const response = await fetch('https://api-inference.huggingface.co');
+      const status = response.ok ? 'online' : 'offline';
+      socket.emit('status_update', { status });
+    } catch (error) {
+      socket.emit('status_update', { 
+        status: 'error', 
+        message: error.message 
+      });
+    }
+  }, 5000);
+  
+  socket.on('disconnect', () => {
+    clearInterval(interval);
+    console.log('Client disconnected');
+  });
+});
 
 // Middleware
 app.use(cors({
@@ -112,6 +145,46 @@ app.post('/api/analyze-image', (req, res, next) => {
   }
 });
 
+app.post('/api/generate-image', async (req, res) => {
+  try {
+    console.log('Request body:', req.body);
+    const { prompt } = req.body;
+    
+    if (!prompt) {
+      return res.status(400).json({ error: 'Prompt is required' });
+    }
+    
+    console.log('Generating image with prompt:', prompt);
+    const imageBuffer = await textToImageWithAI(prompt);
+    console.log('Image generated successfully, buffer length:', imageBuffer?.length || 0);
+    
+    // Set appropriate headers
+    res.set('Content-Type', 'image/jpeg');
+    res.send(imageBuffer);
+  } catch (error) {
+    console.error('Error in /api/generate-image:', error);
+    
+    // Log more details about the error
+    if (error.response) {
+      console.error('Error response from Hugging Face:');
+      console.error('Status:', error.response.status);
+      console.error('Headers:', error.response.headers);
+      
+      // If it's not a binary response, try to log the data
+      if (typeof error.response.data === 'object') {
+        console.error('Data:', JSON.stringify(error.response.data));
+      } else if (error.response.data) {
+        console.error('Data length:', error.response.data.length);
+      }
+    }
+    
+    return res.status(500).json({ 
+      error: 'Failed to generate image', 
+      message: error.message 
+    });
+  }
+});
+
 // Serve the main app when a route doesn't match an API endpoint
 app.get('*', (req, res, next) => {
   // Skip if it's an API route
@@ -147,7 +220,8 @@ app.get('*', (req, res, next) => {
 });
 
 // Start the server
-app.listen(port, () => {
+httpServer.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(`API endpoint: http://localhost:${port}/api/analyze-image`);
+  console.log(`Socket.IO server running and listening for connections`);
 });

@@ -17,41 +17,41 @@ interface AnalysisResult {
    * @returns {Promise<AnalysisResult>} - The analysis results with altText and caption
    */
 export async function uploadImageForAnalysis(file: File): Promise<AnalysisResult> {
-// Validate the file
-if (!file || !file.type.match('image.*')) {
-    throw new Error('Please select a valid image file');
-}
-
-// Check file size (limit to 10MB)
-const MAX_SIZE: number = 10 * 1024 * 1024; // 10MB
-if (file.size > MAX_SIZE) {
-    throw new Error('Image is too large. Please select an image under 10MB.');
-}
-
-// Create form data
-const formData: FormData = new FormData();
-formData.append('image', file);
-
-try {
-    // Send the request to the backend API
-    const response: Response = await fetch('/api/analyze-image', {
-    method: 'POST',
-    body: formData
-    });
-    
-    // Check if request was successful
-    if (!response.ok) {
-    const errorData: { error?: string } = await response.json();
-    throw new Error(errorData.error || 'Failed to analyze image');
+    // Validate the file
+    if (!file || !file.type.match('image.*')) {
+        throw new Error('Please select a valid image file');
     }
-    
-    // Parse and return the data
-    const data: AnalysisResult = await response.json();
-    return data;
-} catch (error) {
-    console.error('Error uploading image:', error);
-    throw error;
-}
+
+    // Check file size (limit to 10MB)
+    const MAX_SIZE: number = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_SIZE) {
+        throw new Error('Image is too large. Please select an image under 10MB.');
+    }
+
+    // Create form data
+    const formData: FormData = new FormData();
+    formData.append('image', file);
+
+    try {
+        // Send the request to the backend API
+        const response: Response = await fetch('/api/analyze-image', {
+            method: 'POST',
+            body: formData
+        });
+        
+        // Check if request was successful
+        if (!response.ok) {
+            const errorData: { error?: string } = await response.json();
+            throw new Error(errorData.error || 'Failed to analyze image');
+        }
+        
+        // Parse and return the data
+        const data: AnalysisResult = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error uploading image:', error);
+        throw error;
+    }
 }
   
   /**
@@ -60,19 +60,19 @@ try {
    * @param {Function} callback - Function to call with the image data URL
    */
 export function createImagePreview(file: File, callback: (dataUrl: string) => void): void {
-if (!file || !file.type.match('image.*')) {
-    return;
-}
-
-const reader: FileReader = new FileReader();
-
-reader.onload = function(e: ProgressEvent<FileReader>) {
-    if (e.target && e.target.result) {
-    callback(e.target.result as string);
+    if (!file || !file.type.match('image.*')) {
+        return;
     }
-};
 
-reader.readAsDataURL(file);
+    const reader: FileReader = new FileReader();
+
+    reader.onload = function(e: ProgressEvent<FileReader>) {
+        if (e.target && e.target.result) {
+        callback(e.target.result as string);
+        }
+    };
+
+    reader.readAsDataURL(file);
 }
   
   /**
@@ -83,10 +83,10 @@ reader.readAsDataURL(file);
    * @returns {string} - Generated HTML code
    */
 export function generateHtmlCode(imageName: string, altText: string, caption: string): string {
-return `<figure>
-    <img src="${imageName}" alt="${altText}">
-    <figcaption>${caption}</figcaption>
-</figure>`;
+    return `<figure>
+        <img src="${imageName}" alt="${altText}">
+        <figcaption>${caption}</figcaption>
+    </figure>`;
 }
   
   /**
@@ -118,4 +118,35 @@ try {
     console.error('Failed to copy text: ', err);
     return false;
 }
+}
+
+  /**
+   * Generate image using the provided prompt
+   * @param {string} prompt - Name of the image file
+   */
+export async function generateImageFromText(prompt: string): Promise<any> {
+    
+    try {
+        // Send the request to the backend API
+        const response: Response = await fetch('/api/generate-image', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ prompt })
+        });
+        console.log(response)
+        // Check if request was successful
+        if (!response.ok) {
+            const errorData: { error?: string } = await response.json();
+            throw new Error(errorData.error || 'Failed to analyze image');
+        }
+        
+        // Parse and return the data
+        const imageBlob = await response.blob();
+        return imageBlob;
+    } catch (error) {
+        console.error('Error uploading image:', error);
+        throw error;
+    }
 }

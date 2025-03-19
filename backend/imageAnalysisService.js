@@ -208,6 +208,57 @@ export async function analyzeImageWithAI(imagePath) {
   }
 }
 
+export async function textToImageWithAI(prompt) {
+  try {
+    const huggingfaceToken = process.env.HUGGINGFACE_API_TOKEN;
+    
+    console.log('------------------------------------------------------------');
+    console.log('Starting text to image generation');
+    console.log('HF Token exists:', !!huggingfaceToken);
+    console.log('Token first 4 chars:', huggingfaceToken ? huggingfaceToken.substring(0, 4) : 'none');
+    console.log('Image prompt:', prompt);
+    console.log('------------------------------------------------------------');
+
+    
+    if (!huggingfaceToken) {
+      console.warn('No Hugging Face API token found.');
+      return getMockAnalysisResults();
+    }
+      
+    try {
+      console.log(`Trying model: stabilityai/stable-diffusion-xl-refiner-1.0`);
+      const response = await axios.post(
+        `https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0`,
+        {
+          inputs: prompt,
+          parameters: {
+            num_inference_steps: 30,
+            guidance_scale: 7.5,
+            negative_prompt: "low quality, bad anatomy, worst quality"
+          },
+          headers: {
+            'Authorization': `Bearer ${huggingfaceToken}`,
+            'Content-Type': 'application/json'
+          },
+          responseType: 'arrayBuffer',
+          timeout: 60000 // Adding timeout since image generation can take time
+        }
+      );
+
+      console.log('Response received with status:', response.status);
+      console.log('Response data length:', response.data?.length || 0);
+      
+      return response.data;
+    } catch (error) {
+      console.log(`model failed:`, error.message);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error in analyzeImageWithAI:', error);
+    return getMockAnalysisResults();
+  }
+}
+
 /**
  * Process the uploaded image
  * @param {Object} req - Express request object
@@ -301,5 +352,6 @@ function getMockAnalysisResults() {
 
 export default {
   analyzeImageWithAI,
-  processUploadedImage
+  processUploadedImage,
+  textToImageWithAI
 };

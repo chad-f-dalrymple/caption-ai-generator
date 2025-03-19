@@ -4,7 +4,8 @@ import {
   uploadImageForAnalysis, 
   createImagePreview, 
   generateHtmlCode, 
-  copyToClipboard 
+  copyToClipboard,
+  generateImageFromText
 } from './utils/utils'; // Assuming the previous TypeScript utilities are in this file
 
 // Define component prop types
@@ -32,6 +33,8 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
   const [error, setError] = useState<string>('');
   const [htmlCode, setHtmlCode] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
+  const [prompt, setPrompt] = useState<string>('a tiger doing a handstand');
+  const [image, setImage] = useState<any>(null)
   
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +71,22 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
       fileInputRef.current.click();
     }
   };
+
+  const handleImageGeneration = async () => {
+    try {
+      if (!prompt) {
+        setError('Please enter a prompt first')
+        return;
+      }
+      console.log(prompt)
+      const result = await generateImageFromText(prompt)
+
+      // set generated image
+      setImage(result)
+    } catch (err) {
+      console.log('could not generate image:', err.message)
+    }
+  }
   
   // Handle analyze button click
   const handleAnalyze = async () => {
@@ -132,6 +151,20 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
 
   return (
     <div className="image-analyzer">
+      {/* Prompt input to generate image */}
+      <div className='flex'>
+        <input
+          value={prompt}
+          type='text'
+          onChange={(e) => setPrompt(e.target.value)}
+        />
+        <button
+          onClick={handleImageGeneration}
+        >
+          Send prompt
+        </button>
+      </div>
+
       
       {/* File input (hidden) */}
       <input
