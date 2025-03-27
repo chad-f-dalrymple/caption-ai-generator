@@ -235,7 +235,9 @@ export async function textToImageWithAI(prompt) {
             num_inference_steps: 30,
             guidance_scale: 7.5,
             negative_prompt: "low quality, bad anatomy, worst quality"
-          },
+          }
+        },
+        {
           headers: {
             'Authorization': `Bearer ${huggingfaceToken}`,
             'Content-Type': 'application/json'

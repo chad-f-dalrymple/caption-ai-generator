@@ -35,6 +35,7 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
   const [copied, setCopied] = useState<boolean>(false);
   const [prompt, setPrompt] = useState<string>('a tiger doing a handstand');
   const [image, setImage] = useState<any>(null)
+  const [imgUrl, setImgUrl] = useState<string>('')
   
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -82,7 +83,8 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
       const result = await generateImageFromText(prompt)
 
       // set generated image
-      setImage(result)
+      const url = URL.createObjectURL(result)
+      setImgUrl(url)
     } catch (err) {
       console.log('could not generate image:', err.message)
     }
@@ -164,6 +166,11 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
           Send prompt
         </button>
       </div>
+      {imgUrl && 
+        <div>
+          <img src={imgUrl} alt="img from blob" />
+        </div>
+      }
 
       
       {/* File input (hidden) */}
