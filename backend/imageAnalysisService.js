@@ -210,17 +210,63 @@ export async function analyzeImageWithAI(imagePath) {
 
 export async function textToImageWithAI(prompt) {
   try {
-    const huggingfaceToken = process.env.HUGGINGFACE_API_TOKEN;
+    const textToImgToken = process.env.HUGGINGFACE_TEXT2IMG_API_TOKEN;
     
     console.log('------------------------------------------------------------');
     console.log('Starting text to image generation');
-    console.log('HF Token exists:', !!huggingfaceToken);
-    console.log('Token first 4 chars:', huggingfaceToken ? huggingfaceToken.substring(0, 4) : 'none');
+    console.log('HF Token exists:', !!textToImgToken);
+    console.log('Token first 4 chars:', textToImgToken ? textToImgToken.substring(0, 4) : 'none');
     console.log('Image prompt:', prompt);
     console.log('------------------------------------------------------------');
 
+    const models = {
+      textToImg: [
+        'stable-diffusion-v1-5/stable-diffusion-v1-5',
+        'stabilityai/stable-diffusion-3.5-large',
+      ]
+    };
+
+    // for (const model of models) {
+    //   if (results) break;
+      
+    //   try {
+    //     console.log(`Trying caption model: ${model}`);
+    //     const response = await axios.post(
+    //       `https://api-inference.huggingface.co/models/${model}`,
+    //       imageBuffer,
+    //       {
+    //         headers: {
+    //           'Authorization': `Bearer ${huggingfaceToken}`,
+    //           'Content-Type': 'application/octet-stream'
+    //         },
+    //         responseType: 'json',
+    //         timeout: 15000 // Shorter timeout to try more models
+    //       }
+    //     );
+        
+    //     // Different models have different response formats
+    //     if (response.data && Array.isArray(response.data) && response.data[0]?.generated_text) {
+    //       results.captionText = response.data[0].generated_text;
+    //       results.captionSuccess = true;
+    //       console.log(`Caption success with ${model}: ${results.captionText}`);
+    //     } else if (response.data && typeof response.data === 'object' && response.data.generated_text) {
+    //       results.captionText = response.data.generated_text;
+    //       results.captionSuccess = true;
+    //       console.log(`Caption success with ${model}: ${results.captionText}`);
+    //     } else if (response.data && typeof response.data === 'string') {
+    //       results.captionText = response.data;
+    //       results.captionSuccess = true;
+    //       console.log(`Caption success with ${model}: ${results.captionText}`);
+    //     } else {
+    //       console.log(`Unexpected response format from ${model}:`, response.data);
+    //     }
+    //   } catch (error) {
+    //     console.log(`Caption model ${model} failed:`, error.message);
+    //   }
+    // }
+
     
-    if (!huggingfaceToken) {
+    if (!textToImgToken) {
       console.warn('No Hugging Face API token found.');
       return getMockAnalysisResults();
     }
@@ -228,7 +274,7 @@ export async function textToImageWithAI(prompt) {
     try {
       console.log(`Trying model: stabilityai/stable-diffusion-xl-refiner-1.0`);
       const response = await axios.post(
-        `https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0`,
+        `https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large`,
         {
           inputs: prompt,
           parameters: {
@@ -239,10 +285,10 @@ export async function textToImageWithAI(prompt) {
         },
         {
           headers: {
-            'Authorization': `Bearer ${huggingfaceToken}`,
+            'Authorization': `Bearer ${textToImgToken}`,
             'Content-Type': 'application/json'
           },
-          responseType: 'arrayBuffer',
+          responseType: 'imageArrayBuffer',
           timeout: 60000 // Adding timeout since image generation can take time
         }
       );
@@ -250,7 +296,7 @@ export async function textToImageWithAI(prompt) {
       console.log('Response received with status:', response.status);
       console.log('Response data length:', response.data?.length || 0);
       
-      return response.data;
+      return response.blob();
     } catch (error) {
       console.log(`model failed:`, error.message);
       throw error;

@@ -81,10 +81,13 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
       }
       console.log(prompt)
       const result = await generateImageFromText(prompt)
-
+      console.log(result)
       // set generated image
-      const url = URL.createObjectURL(result)
-      setImgUrl(url)
+      setTimeout(() => {
+        const url = URL.createObjectURL(result)
+        console.log(url)
+        setImgUrl(url)
+      }, 1000)
     } catch (err) {
       console.log('could not generate image:', err.message)
     }
