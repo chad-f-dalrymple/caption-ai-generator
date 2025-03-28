@@ -5,7 +5,6 @@ import {
   createImagePreview, 
   generateHtmlCode, 
   copyToClipboard,
-  generateImageFromText
 } from './utils/utils'; // Assuming the previous TypeScript utilities are in this file
 
 // Define component prop types
@@ -33,9 +32,7 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
   const [error, setError] = useState<string>('');
   const [htmlCode, setHtmlCode] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
-  const [prompt, setPrompt] = useState<string>('a tiger doing a handstand');
-  const [image, setImage] = useState<any>(null)
-  const [imgUrl, setImgUrl] = useState<string>('')
+
   
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -73,25 +70,7 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
     }
   };
 
-  const handleImageGeneration = async () => {
-    try {
-      if (!prompt) {
-        setError('Please enter a prompt first')
-        return;
-      }
-      console.log(prompt)
-      const result = await generateImageFromText(prompt)
-      console.log(result)
-      // set generated image
-      setTimeout(() => {
-        const url = URL.createObjectURL(result)
-        console.log(url)
-        setImgUrl(url)
-      }, 1000)
-    } catch (err) {
-      console.log('could not generate image:', err.message)
-    }
-  }
+
   
   // Handle analyze button click
   const handleAnalyze = async () => {
@@ -154,26 +133,9 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
   
   const capitalizeFirstLetter = (sentence: string) =>  sentence.charAt(0).toUpperCase() + sentence.slice(1);
 
+
   return (
     <div className="image-analyzer">
-      {/* Prompt input to generate image */}
-      <div className='flex'>
-        <input
-          value={prompt}
-          type='text'
-          onChange={(e) => setPrompt(e.target.value)}
-        />
-        <button
-          onClick={handleImageGeneration}
-        >
-          Send prompt
-        </button>
-      </div>
-      {imgUrl && 
-        <div>
-          <img src={imgUrl} alt="img from blob" />
-        </div>
-      }
 
       
       {/* File input (hidden) */}

@@ -146,42 +146,14 @@ app.post('/api/analyze-image', (req, res, next) => {
 });
 
 app.post('/api/generate-image', async (req, res) => {
+  console.log(req.body)
+  const { prompt } = req.body;
   try {
-    console.log('Request body:', req.body);
-    const { prompt } = req.body;
-    
-    if (!prompt) {
-      return res.status(400).json({ error: 'Prompt is required' });
-    }
-    
-    console.log('Generating image with prompt:', prompt);
     const imageBuffer = await textToImageWithAI(prompt);
-    console.log('Image generated successfully, buffer length:', imageBuffer?.length || 0);
-    
-    // Set appropriate headers
-    res.set('Content-Type', 'image/jpeg');
+    res.set('Content-Type', 'image/png');
     res.send(imageBuffer);
   } catch (error) {
-    console.error('Error in /api/generate-image:', error);
-    
-    // Log more details about the error
-    if (error.response) {
-      console.error('Error response from Hugging Face:');
-      console.error('Status:', error.response.status);
-      console.error('Headers:', error.response.headers);
-      
-      // If it's not a binary response, try to log the data
-      if (typeof error.response.data === 'object') {
-        console.error('Data:', JSON.stringify(error.response.data));
-      } else if (error.response.data) {
-        console.error('Data length:', error.response.data.length);
-      }
-    }
-    
-    return res.status(500).json({ 
-      error: 'Failed to generate image', 
-      message: error.message 
-    });
+    res.status(500).send({ error: 'Failed to generate image' });
   }
 });
 

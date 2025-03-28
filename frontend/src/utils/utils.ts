@@ -124,8 +124,7 @@ try {
    * Generate image using the provided prompt
    * @param {string} prompt - Name of the image file
    */
-export async function generateImageFromText(prompt: string): Promise<any> {
-    
+export async function generateImageFromText(prompt: string): Promise<any> {    
     try {
         // Send the request to the backend API
         const response: Response = await fetch('/api/generate-image', {
@@ -135,7 +134,6 @@ export async function generateImageFromText(prompt: string): Promise<any> {
             },
             body: JSON.stringify({ prompt })
         });
-        console.log(response)
         // Check if request was successful
         if (!response.ok) {
             const errorData: { error?: string } = await response.json();
@@ -143,10 +141,16 @@ export async function generateImageFromText(prompt: string): Promise<any> {
         }
         
         // Parse and return the data
-        const imageBlob = await response.blob();
-        return imageBlob;
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = btoa(
+          new Uint8Array(arrayBuffer).reduce(
+            (data, byte) => data + String.fromCharCode(byte),
+            ''
+          )
+        );
+        return `data:image/png;base64,${base64}`;
     } catch (error) {
-        console.error('Error uploading image:', error);
+        console.error('Error generating image:', error);
         throw error;
     }
 }
