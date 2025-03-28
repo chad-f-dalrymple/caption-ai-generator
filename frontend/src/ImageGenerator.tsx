@@ -39,7 +39,7 @@ const ImageGenerator = () => {
       <>
         <div className='flex flex-col items-center'>
             <input
-                className='bg-white text-zinc-800 p-[8px] w-sm mb-6 mt-8'
+                className='bg-white text-zinc-800 p-[8px] w-sm mb-6 mt-8 rounded-sm'
                 value={prompt}
                 type='text'
                 onChange={(e) => setPrompt(e.target.value)}
