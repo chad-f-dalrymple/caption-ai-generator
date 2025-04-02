@@ -25,21 +25,27 @@ const ImageGenerator = () => {
     }
   }
 
-    const downloadImage = () => {
-        if (imgUrl) {
-          const link = document.createElement('a');
-          link.href = imgUrl;
-          link.download = 'generated_image.png'; // Set the download filename
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link); // Clean up
-        }
-      };
+  const downloadImage = () => {
+      if (imgUrl) {
+        const link = document.createElement('a');
+        link.href = imgUrl;
+        link.download = 'generated_image.png'; // Set the download filename
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link); // Clean up
+      }
+    };
+
+    onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        handleImageGeneration(); // Trigger the click handler when Enter is pressed
+      }
+    };
     return (
       <>
         <div className='flex flex-col items-center'>
             <input
-                className='bg-white text-zinc-800 p-[8px] w-sm mb-6 mt-8 rounded-sm'
+                className='bg-white text-zinc-800 p-[8px] w-sm mb-6 mt-6 rounded-sm'
                 value={prompt}
                 type='text'
                 onChange={(e) => setPrompt(e.target.value)}
@@ -54,7 +60,7 @@ const ImageGenerator = () => {
             }
             {isGenerating && <p>Generating Image...</p>}
         </div>
-        {imgUrl && 
+        {imgUrl && !isGenerating && 
             <div className='justify-items-center'>
               <img src={imgUrl} alt="img from blob" />
               <button onClick={downloadImage}>Download Image</button>

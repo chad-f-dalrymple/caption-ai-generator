@@ -136,8 +136,6 @@ const ImageAnalyzer: React.FC<ImageAnalyzerProps> = ({
 
   return (
     <div className="image-analyzer">
-
-      
       {/* File input (hidden) */}
       <input
         type="file"

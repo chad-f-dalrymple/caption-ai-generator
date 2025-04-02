@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ImageAnalyzer from './ImageAnalyzer';
 import ImageGenerator from './ImageGenerator';
+import ViewToggler from './ViewToggler'
 import './App.css'
 
 // Define the AnalysisResult interface at the app level
@@ -14,11 +15,6 @@ const App: React.FC = () => {
   const [lastAnalysis, setLastAnalysis] = useState<AnalysisResult | null>(null);
   const [appView, setAppView] = useState<string>('Accesibility')
   const [isToggled, setIsToggled] = useState(false);
-
-  const toggleHandler = () => {
-    setIsToggled(!isToggled);
-    isToggled ? setAppView('Accesibility') : setAppView('Generation');
-  };
   
   // Handle analysis completion
   const handleAnalysisComplete = (result: AnalysisResult) => {
@@ -30,12 +26,8 @@ const App: React.FC = () => {
   
   return (
     <div className="app">
-      <div>
-        <button className='bg-blue-700 mb-6 w-xs p-[8px]' onClick={toggleHandler}>
-          {`Switch to ${isToggled ? 'Image Accessibility Tool' : 'Image Generation Tool'}`}
-        </button>
-      </div>
-      <header className="app-header">
+      <ViewToggler isToggled={setIsToggled} appView={setAppView} />
+      <header className="app-header mt-[16px]">
         <h1 className='mb-4'>{appView === 'Accesibility' ? 'Image Accessibility Tool' : 'Image Generation Tool'}</h1>
         <p>{`${appView === 'Accesibility' ? 'Upload an image to generate alt text and captions for web accessibility' : 'Generate a custom image from a prompt'}`}</p>
       </header>
