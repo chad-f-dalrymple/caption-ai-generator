@@ -37,7 +37,7 @@ npm install
    Create a `.env` file in the root directory and add your API keys:
 
 ```
-OPENAI_API_KEY=your_openai_api_key_here
+HUGGINGFACE_API_TOKEN=your_hugginface_api_key_here
 ```
 
 4. Start the development server:
@@ -61,7 +61,7 @@ This command runs the frontend and backend concurrently.
 
 - Frontend: React.js
 - Styling: CSS/SCSS
-- AI Integration: OpenAI API
+- AI Integration: Huggingface API
 - Build Tool: Vite
 
 ## Accessibility
