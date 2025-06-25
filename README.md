@@ -40,7 +40,7 @@ npm install
 HUGGINGFACE_API_TOKEN=your_hugginface_api_key_here
 ```
 
-4. Start the development server:
+4. Start the development server. This runs back end and front end concurrently:
 
 ```bash
 npm run dev
