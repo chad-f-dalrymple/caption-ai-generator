@@ -2,9 +2,6 @@
 
 Alt Caption Generator is a tool designed to help create accessible alternative text for images. The application uses AI to generate descriptive captions that can be used as alt text for images on websites, making content more accessible to users with visual impairments.
 
-## Demo
-See demo [here](https://alt-and-caption-generator-f0936c42d547.herokuapp.com/)
-
 ## Features
 
 - AI-powered image description generation
