@@ -1,3 +1,5 @@
+# Currently offline. There seems to be an issue with the LLM's from Huggingface
+
 # Alt Caption Generator
 
 Alt Caption Generator is a tool designed to help create accessible alternative text for images. The application uses AI to generate descriptive captions that can be used as alt text for images on websites, making content more accessible to users with visual impairments.
